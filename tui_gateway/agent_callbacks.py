@@ -262,6 +262,16 @@ def _background_agent_kwargs(agent, task_id: str) -> dict:
     else:
         fallback = (agent._fallback_model if hasattr(agent, "_fallback_model")
                     else _load_fallback_model())
+    # ``None`` means no explicit parent selection and may fall back to the
+    # configured TUI surface.  An explicit empty list means zero callable
+    # tools; using ``or`` here widened that fail-closed posture back to the
+    # configured/default tool surface for every detached child (#82010).
+    parent_toolsets = g("enabled_toolsets")
+    enabled_toolsets = (
+        parent_toolsets
+        if parent_toolsets is not None
+        else _load_enabled_toolsets("tui")
+    )
     # Detached tasks declare platform="tui" (no UI sid for renderer-routed events), so resolve
     # toolsets against it — never GUI schema they can't use.
     return {
@@ -270,7 +280,7 @@ def _background_agent_kwargs(agent, task_id: str) -> dict:
         **{k: g(k) for k in ("providers_allowed", "providers_ignored", "providers_order", "provider_sort",
                              "provider_data_collection", "openrouter_min_coding_score")},
         "model": g("model") or _resolve_model(), "max_iterations": _cfg_max_turns(cfg, 25),
-        "enabled_toolsets": g("enabled_toolsets") or _load_enabled_toolsets("tui"),
+        "enabled_toolsets": enabled_toolsets,
         "quiet_mode": True, "verbose_logging": False,
         "provider_require_parameters": g("provider_require_parameters", False), "session_id": task_id,
         "reasoning_config": g("reasoning_config") or _load_reasoning_config(str(g("model", "") or "")),

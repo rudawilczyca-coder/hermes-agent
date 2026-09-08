@@ -4592,6 +4592,23 @@ def test_background_agent_kwargs_preserves_empty_fallback_chain(monkeypatch):
     assert kwargs["fallback_model"] == []
 
 
+def test_background_agent_kwargs_preserves_explicit_zero_tool_surface(monkeypatch):
+    """A fail-closed parent must not give detached children configured tools."""
+    agent = types.SimpleNamespace(
+        model="gpt-5.5",
+        provider="openai-codex",
+        enabled_toolsets=[],
+        _fallback_chain=[],
+    )
+    monkeypatch.setattr(server, "_load_cfg", lambda: {"max_turns": 25})
+    monkeypatch.setattr(server, "_load_enabled_toolsets", lambda *_a, **_kw: ["terminal", "file"])
+    monkeypatch.setattr(server, "_get_db", lambda: None)
+
+    kwargs = server._background_agent_kwargs(agent, "task-id")
+
+    assert kwargs["enabled_toolsets"] == []
+
+
 def test_startup_runtime_resolves_short_alias_without_network(monkeypatch):
     monkeypatch.setenv("HERMES_MODEL", "sonnet")
     monkeypatch.delenv("HERMES_TUI_PROVIDER", raising=False)
