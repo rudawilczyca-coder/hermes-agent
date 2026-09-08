@@ -491,6 +491,26 @@ from cron.executions import (
 SILENT_MARKER = "[SILENT]"
 
 
+def _zero_inference_failure_reason(result: dict) -> str:
+    """Classify an explicit zero-call agent result as an incomplete cron run.
+
+    ``api_calls`` is emitted by the conversation loop on every normal return.
+    An explicit zero means the scheduled prompt never reached a model, so none
+    of the job's advertised work can have happened. Missing or malformed
+    values remain backward-compatible with older result shapes and test doubles.
+    """
+    api_calls = result.get("api_calls")
+    if isinstance(api_calls, bool) or not isinstance(api_calls, int):
+        return ""
+    if api_calls > 0:
+        return ""
+    return (
+        "cron run made zero inference calls (api_calls=0) — the run was "
+        "interrupted before reaching the model, so none of the job's work "
+        "was performed; refusing to record it as successful"
+    )
+
+
 def _is_cron_silence_response(text: str) -> bool:
     """True when a cron final response should suppress delivery: ``[SILENT]`` (or SILENT /
     NO_REPLY / NO REPLY) as the whole response OR its own first/last line — NOT mid-sentence.
@@ -2359,6 +2379,9 @@ def run_job(
         result = _run_agent_with_watchdog(
             agent, prompt, job, job_id, job_name, scope.task_id, cancel_event,
             worker_state=_worker_state)
+        zero_inference = _zero_inference_failure_reason(result)
+        if zero_inference:
+            raise RuntimeError(zero_inference)
         final_response = _final_response_from_result(result, job_id, job_name, AIAgent)
         # Keep final_response clean for delivery logic (empty = no delivery).
         logged_response = final_response if final_response else "(No response generated)"
