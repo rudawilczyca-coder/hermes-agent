@@ -124,7 +124,6 @@ describe('desktop slash command curation', () => {
     expect(isDesktopSlashSuggestion('/redraw')).toBe(false)
     expect(isDesktopSlashSuggestion('/approve')).toBe(false)
     expect(isDesktopSlashSuggestion('/model')).toBe(false)
-    expect(isDesktopSlashSuggestion('/skills')).toBe(false)
     expect(isDesktopSlashSuggestion('/voice')).toBe(false)
     expect(isDesktopSlashSuggestion('/curator')).toBe(false)
   })
@@ -159,6 +158,14 @@ describe('desktop slash command curation', () => {
     expect(desktopSlashUnavailableMessage('/tools')).toBeNull()
     expect(desktopSlashUnavailableMessage('/save')).toBeNull()
     expect(desktopSlashUnavailableMessage('/personality')).toBeNull()
+  })
+
+  it('executes pending skill review through the desktop command surface', () => {
+    expect(resolveDesktopCommand('/skills')?.surface).toEqual({ kind: 'exec' })
+    expect(isDesktopSlashCommand('/skills')).toBe(true)
+    expect(isDesktopSlashSuggestion('/skills')).toBe(true)
+    expect(desktopSlashUnavailableMessage('/skills')).toBeNull()
+    expect(desktopSlashCommandArgumentMode('/skills')).toBe('mixed')
   })
 
   it('routes /pet through the desktop action handler and drops /pets', () => {
@@ -379,8 +386,8 @@ describe('desktop slash command curation', () => {
 
   it('explains known commands that desktop owns elsewhere', () => {
     expect(desktopSlashUnavailableMessage('/model sonnet')).toContain('model picker')
-    expect(desktopSlashUnavailableMessage('/skills')).toContain('desktop sidebar')
     expect(desktopSlashUnavailableMessage('/clear')).toContain('terminal interface')
+    expect(desktopSlashUnavailableMessage('/pets')).toContain('desktop sidebar')
   })
 
   it('flags /model as a picker-owned command so the desktop opens the overlay', () => {

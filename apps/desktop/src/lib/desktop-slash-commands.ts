@@ -274,6 +274,14 @@ const DESKTOP_COMMAND_SPECS: readonly DesktopCommandSpec[] = [
     surface: rpc('session.save', ctx => ({ session_id: ctx.sessionId }))
   },
   {
+    name: '/skills',
+    description: 'Review pending skill writes and manage skill approval',
+    surface: exec(),
+    // pending/approve/reject/diff take free-form ids while approval has
+    // finite on/off options, so keep both completion and typing available.
+    argumentMode: 'mixed'
+  },
+  {
     name: '/status',
     description: 'Show current session status',
     surface: rpc('session.status', ctx => ({ session_id: ctx.sessionId }))
@@ -317,7 +325,7 @@ const NO_DESKTOP_SURFACE: Record<DesktopUnavailableReason, readonly string[]> = 
     '/verbose'
   ],
   messaging: ['/approve', '/deny'],
-  settings: ['/skills', '/pets'],
+  settings: ['/pets'],
   advanced: [
     '/curator',
     '/fast',
